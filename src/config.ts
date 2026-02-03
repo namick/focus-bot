@@ -1,9 +1,6 @@
 import { z } from 'zod';
-import { config as loadEnv } from 'dotenv';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-
-loadEnv();
 
 const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z
@@ -39,7 +36,7 @@ const envSchema = z.object({
 
   ANTHROPIC_API_KEY: z
     .string()
-    .min(1, 'ANTHROPIC_API_KEY is required'),
+    .optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
