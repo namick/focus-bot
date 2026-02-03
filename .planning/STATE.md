@@ -5,32 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Message -> Note. No friction, no decisions. Just send a thought and it's captured with intelligent metadata.
-**Current focus:** Phase 1 - Foundation (COMPLETE)
+**Current focus:** Phase 2 - Core Capture (IN PROGRESS)
 
 ## Current Position
 
-Phase: 1 of 3 (Foundation) - COMPLETE
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-03 - Completed 01-02-PLAN.md (Bot Assembly and Entry Point)
+Phase: 2 of 3 (Core Capture)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-03 - Completed 02-01-PLAN.md (Note Capture Service)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 2.5 min
-- Total execution time: 0.08 hours
+- Total plans completed: 3
+- Average duration: 3 min
+- Total execution time: 0.15 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 2 | 5 min | 2.5 min |
+| 02-core-capture | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (3 min)
+- Last 5 plans: 01-01 (2 min), 01-02 (3 min), 02-01 (4 min)
 - Trend: Steady
 
 *Updated after each plan completion*
@@ -49,6 +50,9 @@ Recent decisions affecting current work:
 - [01-02]: Auth middleware registered FIRST to enforce authorization on all messages
 - [01-02]: Runner pattern for concurrent long polling instead of bot.start()
 - [01-02]: Error handler logs update_id for debugging failed updates
+- [02-01]: Two-phase capture pattern (extract metadata, then write file)
+- [02-01]: disallowedTools for restriction (allowedTools is broken)
+- [02-01]: sanitize-filename with timestamp fallback for edge cases
 
 ### Pending Todos
 
@@ -56,21 +60,23 @@ None yet.
 
 ### Blockers/Concerns
 
-None - Phase 1 Foundation complete and verified.
+None - Phase 2 Plan 01 complete, ready for message handler integration.
 
 ## Session Continuity
 
-Last session: 2026-02-03T16:48:00Z
-Stopped at: Completed 01-02-PLAN.md (Phase 1 complete)
+Last session: 2026-02-03T17:04:00Z
+Stopped at: Completed 02-01-PLAN.md (Note Capture Service)
 Resume file: None
 
-## Phase 1 Completion Summary
+## Phase 2 Progress
 
-Foundation phase delivered:
+Core Capture phase status:
+- [x] Plan 01: Note Capture Service - Claude SDK integration, structured output, file writing
+- [ ] Plan 02: Message Handler - Wire captureNote() to text message events
+
+Foundation delivered (Phase 1):
 - Config validation with Zod (fail-fast on invalid config)
 - Auth middleware (blocks unauthorized users)
 - /start command handler (help message)
 - Bot assembly with middleware chain
 - Entry point with runner and graceful shutdown
-
-Ready for Phase 2: Core Capture (text message handling, note creation, Claude integration)
