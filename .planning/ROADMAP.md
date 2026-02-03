@@ -43,10 +43,11 @@ Plans:
   3. Filename is the generated title with reserved characters sanitized plus .md extension
   4. Bot confirms note was saved by displaying the generated title
   5. Note content preserves original message exactly
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md - Config extension, dependencies, note capture service
+- [ ] 02-02-PLAN.md - Text message handler, bot wiring, end-to-end verification
 
 ### Phase 3: Polish
 **Goal**: User can verify notes are being saved correctly via /recent command
@@ -68,5 +69,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-02-03 |
-| 2. Core Capture | 0/TBD | Not started | - |
+| 2. Core Capture | 0/2 | Not started | - |
 | 3. Polish | 0/TBD | Not started | - |
