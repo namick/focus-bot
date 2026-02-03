@@ -36,6 +36,10 @@ const envSchema = z.object({
       (val) => fs.existsSync(val) && fs.statSync(val).isDirectory(),
       'NOTES_DIR must be a directory'
     ),
+
+  ANTHROPIC_API_KEY: z
+    .string()
+    .min(1, 'ANTHROPIC_API_KEY is required'),
 });
 
 const parsed = envSchema.safeParse(process.env);
