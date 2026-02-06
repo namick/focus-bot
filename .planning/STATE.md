@@ -2,39 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-02)
+See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Message -> Note. No friction, no decisions. Just send a thought and it's captured with intelligent metadata.
-**Current focus:** Phase 2 - Core Capture (IN PROGRESS)
+**Current focus:** Phase 3 - Polish (NOT STARTED)
 
 ## Current Position
 
-Phase: 2 of 3 (Core Capture)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-03 - Completed 02-01-PLAN.md (Note Capture Service)
+Phase: 3 of 3 (Polish)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-02-06 - Committed Phase 2 completion + research docs
 
-Progress: [███░░░░░░░] 30%
-
-## Performance Metrics
-
-**Velocity:**
-- Total plans completed: 3
-- Average duration: 3 min
-- Total execution time: 0.15 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01-foundation | 2 | 5 min | 2.5 min |
-| 02-core-capture | 1 | 4 min | 4 min |
-
-**Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (3 min), 02-01 (4 min)
-- Trend: Steady
-
-*Updated after each plan completion*
+Progress: [███████░░░] 70%
 
 ## Accumulated Context
 
@@ -49,34 +29,54 @@ Recent decisions affecting current work:
 - [01-01]: Fail-fast pattern - exit immediately on invalid config
 - [01-02]: Auth middleware registered FIRST to enforce authorization on all messages
 - [01-02]: Runner pattern for concurrent long polling instead of bot.start()
-- [01-02]: Error handler logs update_id for debugging failed updates
 - [02-01]: Two-phase capture pattern (extract metadata, then write file)
-- [02-01]: disallowedTools for restriction (allowedTools is broken)
 - [02-01]: sanitize-filename with timestamp fallback for edge cases
+- [Post-02]: Direct fs.writeFileSync instead of Claude Write tool
+- [Post-02]: Captures/ subdirectory (aligns with GTD inbox concept)
+- [Post-02]: No title in frontmatter (filename IS the title in Obsidian)
+- [Post-02]: Local datetime format YYYY-MM-DDTHH:mm for Obsidian compatibility
+- [Post-02]: source/status fields for Dataview queries and inbox workflow
+- [Post-02]: Fire-and-forget enrichment stub (never blocks user)
+- [Research]: Second brain methodology research completed (BASB, Zettelkasten, GTD, Evergreen, MOCs)
+- [Research]: Feature prioritization from P0-P3 documented in IMPROVEMENT-OPTIONS-REPORT.md
 
 ### Pending Todos
 
-None yet.
+- Phase 3 (/recent command) needs planning
+- Admin commands need production testing
+- Consider which enrichment features to tackle after MVP
 
 ### Blockers/Concerns
 
-None - Phase 2 Plan 01 complete, ready for message handler integration.
+None - Phase 2 complete, bot is functional and deployed.
 
 ## Session Continuity
 
-Last session: 2026-02-03T17:04:00Z
-Stopped at: Completed 02-01-PLAN.md (Note Capture Service)
+Last session: 2026-02-06
+Stopped at: Documentation updates after Phase 2 completion
 Resume file: None
 
-## Phase 2 Progress
+## What's Been Delivered
 
-Core Capture phase status:
-- [x] Plan 01: Note Capture Service - Claude SDK integration, structured output, file writing
-- [ ] Plan 02: Message Handler - Wire captureNote() to text message events
-
-Foundation delivered (Phase 1):
+### Phase 1: Foundation (Complete - 2026-02-03)
 - Config validation with Zod (fail-fast on invalid config)
 - Auth middleware (blocks unauthorized users)
 - /start command handler (help message)
 - Bot assembly with middleware chain
 - Entry point with runner and graceful shutdown
+
+### Phase 2: Core Capture (Complete - 2026-02-05)
+- Note capture service: Claude haiku metadata extraction + direct file writing
+- Text message handler wired to bot
+- Enriched frontmatter (created, tags, source, status)
+- Captures/ subdirectory with auto-creation
+- Fire-and-forget enrichment stub
+- Admin commands (/health, /status, /logs, /restart)
+- systemd service file for production
+- CLAUDE.md and README.md documentation
+
+### Research (2026-02-05)
+- Second brain methodologies deep dive (BASB/PARA, Zettelkasten, GTD, Evergreen Notes, MOCs)
+- Improvement options report with P0-P3 feature prioritization
+- Obsidian properties best practices
+- Competitive landscape analysis
