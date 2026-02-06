@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Message -> Note. No friction, no decisions. Just send a thought and it's captured with intelligent metadata.
-**Current focus:** Phase 3 - Polish (NOT STARTED)
+**Current focus:** MVP complete. Next: URL/bookmark capture (Phase 4)
 
 ## Current Position
 
-Phase: 3 of 3 (Polish)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-06 - Committed Phase 2 completion + research docs
+Phase: 3 of 3 complete (Milestone 1: MVP done)
+Next: Phase 4 (URL/Bookmark Capture) -- Milestone 2: Enrichment
+Status: Ready for Phase 4 planning
+Last activity: 2026-02-06 - Steph Ango vault restructure + polish
 
-Progress: [███████░░░] 70%
+Progress: [██████████] 100% (Milestone 1)
 
 ## Accumulated Context
 
@@ -23,38 +23,33 @@ Progress: [███████░░░] 70%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Roadmap]: 3 phases derived from requirements (Foundation, Core Capture, Polish)
-- [01-01]: Zod v4 for config validation - 14x faster parsing, TypeScript-native
-- [01-01]: ESM modules with NodeNext resolution
-- [01-01]: Fail-fast pattern - exit immediately on invalid config
-- [01-02]: Auth middleware registered FIRST to enforce authorization on all messages
-- [01-02]: Runner pattern for concurrent long polling instead of bot.start()
-- [02-01]: Two-phase capture pattern (extract metadata, then write file)
-- [02-01]: sanitize-filename with timestamp fallback for edge cases
-- [Post-02]: Direct fs.writeFileSync instead of Claude Write tool
-- [Post-02]: Captures/ subdirectory (aligns with GTD inbox concept)
-- [Post-02]: No title in frontmatter (filename IS the title in Obsidian)
-- [Post-02]: Local datetime format YYYY-MM-DDTHH:mm for Obsidian compatibility
-- [Post-02]: source/status fields for Dataview queries and inbox workflow
-- [Post-02]: Fire-and-forget enrichment stub (never blocks user)
-- [Research]: Second brain methodology research completed (BASB, Zettelkasten, GTD, Evergreen, MOCs)
-- [Research]: Feature prioritization from P0-P3 documented in IMPROVEMENT-OPTIONS-REPORT.md
+- [Phase 3]: Steph Ango vault patterns adopted (categories as wiki-links, topics replace tags)
+- [Phase 3]: Categories constrained to files in Categories/ directory (loaded at startup)
+- [Phase 3]: Topics as freeform wiki-links (2-5 per note, replaces flat tags)
+- [Phase 3]: Inline [[wiki-links]] in note body (same Claude call, zero extra latency)
+- [Phase 3]: Notes go to vault root (no Captures/ subdirectory)
+- [Phase 3]: `[[Captures]]` always included as a category
+- [Phase 3]: `captured` replaces `created` in frontmatter
+- [Phase 3]: Removed build step (Bun runs TypeScript directly)
+- [Phase 3]: /restart in Telegram command menu
+- [Phase 3]: Startup notification sent to all allowed users
+- [Phase 3]: /recent dropped (Telegram history serves this function)
 
 ### Pending Todos
 
-- Phase 3 (/recent command) needs planning
-- Admin commands need production testing
-- Consider which enrichment features to tackle after MVP
+- Test Phase 3 changes end-to-end (send message, verify note format)
+- Phase 4 (URL/bookmark capture) needs planning
+- Update systemd service file if needed after testing
 
 ### Blockers/Concerns
 
-None - Phase 2 complete, bot is functional and deployed.
+None - Phase 3 complete, bot has been restructured.
 
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Documentation updates after Phase 2 completion
-Resume file: None
+Stopped at: Phase 3 complete, docs updated, ready for Phase 4
+Resume file: .planning/WHATSNEXT.md
 
 ## What's Been Delivered
 
@@ -69,14 +64,22 @@ Resume file: None
 - Note capture service: Claude haiku metadata extraction + direct file writing
 - Text message handler wired to bot
 - Enriched frontmatter (created, tags, source, status)
-- Captures/ subdirectory with auto-creation
 - Fire-and-forget enrichment stub
 - Admin commands (/health, /status, /logs, /restart)
 - systemd service file for production
 - CLAUDE.md and README.md documentation
 
-### Research (2026-02-05)
-- Second brain methodologies deep dive (BASB/PARA, Zettelkasten, GTD, Evergreen Notes, MOCs)
-- Improvement options report with P0-P3 feature prioritization
-- Obsidian properties best practices
-- Competitive landscape analysis
+### Phase 3: Vault Integration (Complete - 2026-02-06)
+- Steph Ango vault research (article, repo, templates, property patterns)
+- Obsidian wiki-link frontmatter research (native support, Dataview, plugins)
+- Restructured note format: categories (wiki-links), topics (wiki-links), inline [[wiki-links]] in body
+- Categories loaded from Categories/ directory at startup
+- Notes written to vault root (removed Captures/ subdirectory)
+- Removed build step (Bun runs TS directly)
+- /restart in Telegram command menu
+- Startup notification to allowed users on boot
+- Updated /start help text, CLAUDE.md, README.md, all planning docs
+
+### Research
+- 2026-02-05: Second brain methodologies, feature prioritization, competitive landscape
+- 2026-02-06: Steph Ango vault system, Obsidian property types, wiki-links in frontmatter

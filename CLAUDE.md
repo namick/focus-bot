@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Focus Bot is a Telegram bot that captures quick thoughts and saves them as markdown notes to an Obsidian vault. Messages sent to the bot are analyzed by Claude to generate a title and 3-5 tags, then written as markdown files with YAML frontmatter to a `Captures/` subdirectory.
+Focus Bot is a Telegram bot that captures quick thoughts and saves them as markdown notes to an Obsidian vault. Messages sent to the bot are analyzed by Claude to generate a title, categories, topics, and inline wiki-links, then written as markdown files with YAML frontmatter to the vault root. Organization follows Steph Ango's vault patterns: categories as wiki-links to hub notes, topics for subject matter, and `[[wiki-links]]` in note body.
 
 ## Commands
 
@@ -26,7 +26,7 @@ npx tsc --noEmit
 
 ### Message Flow
 ```
-Telegram → Grammy Bot → Auth Middleware → Message Handler → Note Capture Service → fs.writeFileSync → Captures/
+Telegram → Grammy Bot → Auth Middleware → Message Handler → Note Capture Service → fs.writeFileSync → NOTES_DIR/
                                                          → (async) Note Enrichment Service (stub)
 ```
 
@@ -34,26 +34,29 @@ Telegram → Grammy Bot → Auth Middleware → Message Handler → Note Capture
 2. Auth middleware checks user ID against `ALLOWED_USER_IDS` whitelist
 3. Message handler extracts text and calls `captureNote()` (fast path)
 4. Note capture service:
-   - **Metadata extraction**: Claude haiku analyzes message, returns JSON `{title, tags}`
-   - **File writing**: Direct `fs.writeFileSync` to `CAPTURES_DIR` (no Claude SDK needed)
+   - **Metadata extraction**: Claude haiku analyzes message, returns JSON `{title, categories, topics, body}`
+   - Categories are constrained to files in `NOTES_DIR/Categories/` (loaded at startup)
+   - Body includes inline `[[wiki-links]]` for key concepts
+   - **File writing**: Direct `fs.writeFileSync` to `NOTES_DIR`
 5. Handler replies to user with "Saved: [title]"
 6. Handler fires `processNote()` as fire-and-forget (async enrichment, currently a stub)
 
 ### Key Files
-- `src/index.ts` - Entry point, bot startup, Captures/ dir creation, graceful shutdown
-- `src/config.ts` - Zod-validated environment configuration + derived `CAPTURES_DIR`
+- `src/index.ts` - Entry point, bot startup, categories loading, graceful shutdown
+- `src/config.ts` - Zod-validated environment configuration + `CATEGORIES_DIR` + `loadCategories()`
 - `src/bot/bot.ts` - Grammy bot initialization, middleware/handler registration
 - `src/bot/middleware/auth.ts` - User whitelist enforcement
 - `src/bot/handlers/message.ts` - Routes text messages to note capture, fires async enrichment
 - `src/services/note-capture.ts` - Core logic: metadata extraction + direct file writing
-- `src/services/note-enrichment.ts` - Async enrichment stub (future: type classification, link suggestions)
+- `src/services/note-enrichment.ts` - Async enrichment stub (future: URL metadata, vault scanning)
 
 ### Claude Agent SDK Usage Pattern
 
 The bot uses `query()` from `@anthropic-ai/claude-agent-sdk` for a single call:
 
 **Metadata extraction** (`haiku` model, 1 turn):
-- Prompt asks for JSON response with title and tags
+- Prompt includes the category list from `Categories/` directory
+- Asks for JSON with title, categories, topics, and wiki-linked body
 - Response parsed with regex to extract JSON, validated with Zod
 - No tools allowed (pure text response)
 
@@ -62,10 +65,8 @@ File writing is done directly via `fs.writeFileSync` — no Claude SDK involved.
 ### Async Enrichment Architecture
 
 After the fast capture path completes and the user gets their reply, the message handler fires `processNote()` as a fire-and-forget call. This is currently a no-op stub. Future enrichment tasks:
-- Note type classification (fleeting, task, reference, journal, quote)
-- Link suggestions to existing vault notes
-- Summary generation for long notes
-- Alias generation
+- URL/bookmark metadata fetching
+- Vault-aware link suggestions
 
 Enrichment failures are logged but never surface to the user.
 
@@ -75,35 +76,39 @@ Required environment variables (validated at startup):
 
 - **`TELEGRAM_BOT_TOKEN`** — Bot token from @BotFather
 - **`ALLOWED_USER_IDS`** — Comma-separated Telegram user IDs
-- **`NOTES_DIR`** — Absolute path to Obsidian vault
+- **`NOTES_DIR`** — Absolute path to Obsidian vault root (must contain a `Categories/` subdirectory)
 - **`ANTHROPIC_API_KEY`** — Optional (defaults to subscription model)
 
 Derived values:
-- **`CAPTURES_DIR`** — `NOTES_DIR/Captures/` (created at startup)
+- **`CATEGORIES_DIR`** — `NOTES_DIR/Categories/` (must exist, read at startup)
 
 ## Note Format
 
-The filename IS the title (Obsidian convention). No `title` property in frontmatter.
+The filename IS the title (Obsidian convention). No `title` property in frontmatter. Inspired by [Steph Ango's vault](https://stephango.com/vault).
 
 ```markdown
 ---
-created: 2026-02-04T14:34
-tags:
-  - tag-one
-  - tag-two
-  - tag-three
+captured: 2026-02-04T14:34
 source: telegram
 status: inbox
+categories:
+  - "[[Captures]]"
+  - "[[Ideas]]"
+topics:
+  - "[[Consciousness]]"
+  - "[[Philosophy]]"
 ---
-
-Original message content here.
+One way to prove or overcome the subjectiveness of [[consciousness]] or [[qualia]], would be to have some sort of consciousness sharing experience.
 ```
 
-- **Filename**: AI-generated title with spaces preserved (e.g., `Coffee Machine Algorithm.md`)
-- **created**: Local datetime in `YYYY-MM-DDTHH:mm` format (Obsidian-compatible)
+- **Filename**: AI-generated title with spaces preserved (e.g., `Consciousness Sharing to Prove Qualia.md`)
+- **captured**: Local datetime in `YYYY-MM-DDTHH:mm` format (Obsidian-compatible)
 - **source**: Always `telegram` (enables Dataview filtering)
 - **status**: Always `inbox` (for processing workflow)
-- **Location**: `NOTES_DIR/Captures/` subdirectory
+- **categories**: Wiki-links to hub notes in `Categories/` directory. `[[Captures]]` always included.
+- **topics**: Wiki-links for subject matter (freeform, AI-generated)
+- **Body**: Original message with inline `[[wiki-links]]` for key concepts
+- **Location**: `NOTES_DIR` root
 
 ## Planning Documentation
 

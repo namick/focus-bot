@@ -1,12 +1,12 @@
 import { run } from '@grammyjs/runner';
-import * as fs from 'node:fs';
 import { createBot } from './bot/bot.js';
-import { CAPTURES_DIR } from './config.js';
+import { config, loadCategories } from './config.js';
+import { helpMessage } from './bot/handlers/command.js';
 
 async function main(): Promise<void> {
-  // Ensure Captures/ directory exists before bot starts
-  fs.mkdirSync(CAPTURES_DIR, { recursive: true });
-  console.log(`Captures directory ready: ${CAPTURES_DIR}`);
+  // Load categories from vault at startup (fails fast if Categories/ missing)
+  const categories = loadCategories();
+  console.log(`Loaded ${categories.length} categories: ${categories.join(', ')}`);
 
   const bot = createBot();
 
@@ -16,9 +16,17 @@ async function main(): Promise<void> {
     { command: 'health', description: 'Check bot health and uptime' },
     { command: 'status', description: 'Show systemd service status' },
     { command: 'logs', description: 'Show recent log entries' },
+    { command: 'restart', description: 'Restart the bot' },
   ]);
 
   const handle = run(bot);
+
+  // Notify allowed users that the bot is online
+  for (const userId of config.ALLOWED_USER_IDS) {
+    bot.api.sendMessage(userId, helpMessage).catch(() => {
+      // Ignore errors (user may not have started a chat yet)
+    });
+  }
 
   const shutdown = async (signal: string): Promise<void> => {
     console.log(`\nReceived ${signal}. Shutting down gracefully...`);

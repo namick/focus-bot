@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 import sanitize from 'sanitize-filename';
-import { CAPTURES_DIR } from '../config.js';
+import { config, loadCategories } from '../config.js';
 
 // Path to Claude Code executable
 const CLAUDE_CODE_PATH =
@@ -14,16 +14,10 @@ const CLAUDE_CODE_PATH =
  * Schema for note metadata extracted by Claude.
  */
 const NoteMetadataSchema = z.object({
-  title: z
-    .string()
-    .min(1)
-    .max(100)
-    .describe('A concise, descriptive title for the note (1-100 chars)'),
-  tags: z
-    .array(z.string())
-    .min(3)
-    .max(5)
-    .describe('3-5 relevant tags as lowercase kebab-case'),
+  title: z.string().min(1).max(100),
+  categories: z.array(z.string()).min(1).max(5),
+  topics: z.array(z.string()).min(2).max(5),
+  body: z.string().min(1),
 });
 
 type NoteMetadata = z.infer<typeof NoteMetadataSchema>;
@@ -34,21 +28,26 @@ export interface CaptureResult {
 }
 
 /**
- * Extract title and tags from a message using Claude.
+ * Extract title, categories, topics, and wiki-linked body from a message using Claude.
  */
 async function extractMetadata(message: string): Promise<NoteMetadata> {
+  const categories = loadCategories();
+  const categoryList = categories.join(', ');
+
   for await (const msg of query({
-    prompt: `Analyze this message and generate a title and 3-5 relevant tags.
+    prompt: `Analyze this message and generate metadata for an Obsidian note.
 
 Message:
 ${message}
 
 Respond with ONLY a JSON object (no markdown, no explanation) in this exact format:
-{"title": "A concise descriptive title", "tags": ["tag-one", "tag-two", "tag-three"]}
+{"title": "A concise descriptive title", "categories": ["Category1", "Category2"], "topics": ["Topic One", "Topic Two", "Topic Three"], "body": "The message with [[wiki-links]] inserted around key concepts."}
 
 Requirements:
-- title: 1-100 characters, descriptive
-- tags: 3-5 lowercase kebab-case strings`,
+- title: 1-100 characters, concise and descriptive
+- categories: Pick 1-5 from ONLY this list: ${categoryList}
+- topics: 2-5 topic names as natural phrases (capitalized, e.g. "Machine Learning", "Philosophy")
+- body: Rewrite the original message inserting [[wiki-links]] around key concepts, important nouns, and proper names. Preserve the original meaning and wording exactly -- only add [[ and ]] around terms worth linking. Link both well-known concepts and ideas worth exploring further.`,
     options: {
       model: 'haiku',
       maxTurns: 1,
@@ -57,7 +56,6 @@ Requirements:
   })) {
     if (msg.type === 'result') {
       if (msg.subtype === 'success' && msg.result) {
-        // Parse JSON from the text result
         const jsonMatch = msg.result.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
           throw new Error('No JSON found in response');
@@ -89,22 +87,31 @@ function formatLocalDatetime(date: Date): string {
  * Generate markdown content with YAML frontmatter.
  * Title is omitted — the filename IS the title in Obsidian.
  */
-function generateNoteContent(
-  metadata: NoteMetadata,
-  originalMessage: string
-): string {
-  const created = formatLocalDatetime(new Date());
-  const tagsYaml = metadata.tags.map((tag) => `  - ${tag}`).join('\n');
+function generateNoteContent(metadata: NoteMetadata): string {
+  const captured = formatLocalDatetime(new Date());
+
+  // Ensure [[Captures]] is always included
+  const allCategories = metadata.categories.includes('Captures')
+    ? metadata.categories
+    : ['Captures', ...metadata.categories];
+
+  const categoriesYaml = allCategories
+    .map((c) => `  - "[[${c}]]"`)
+    .join('\n');
+  const topicsYaml = metadata.topics
+    .map((t) => `  - "[[${t}]]"`)
+    .join('\n');
 
   return `---
-created: ${created}
-tags:
-${tagsYaml}
+captured: ${captured}
 source: telegram
 status: inbox
+categories:
+${categoriesYaml}
+topics:
+${topicsYaml}
 ---
-
-${originalMessage}
+${metadata.body}
 `;
 }
 
@@ -126,15 +133,10 @@ function generateFilename(title: string): string {
 export async function captureNote(
   message: string
 ): Promise<CaptureResult> {
-  // Phase 1: Extract metadata with Claude
   const metadata = await extractMetadata(message);
-
-  // Phase 2: Generate filename and content
   const filename = generateFilename(metadata.title);
-  const content = generateNoteContent(metadata, message);
-
-  // Phase 3: Write file directly to Captures/ directory
-  const filePath = path.join(CAPTURES_DIR, filename);
+  const content = generateNoteContent(metadata);
+  const filePath = path.join(config.NOTES_DIR, filename);
   fs.writeFileSync(filePath, content, 'utf-8');
 
   return { title: metadata.title, filePath };

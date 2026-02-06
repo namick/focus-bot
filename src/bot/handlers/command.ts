@@ -1,19 +1,18 @@
 import { Context } from 'grammy';
 
-const helpMessage = `Welcome to Focus Bot!
+export const helpMessage = `Focus Bot is online.
 
-I capture your thoughts and save them as notes in your Obsidian vault.
-
-How to use:
-- Just send me any text message
-- I'll generate a title and tags automatically
-- The note will be saved to your vault
+Send me any text and I'll save it as a note with:
+- AI-generated title (becomes the filename)
+- Categories from your vault's Categories/ directory
+- Topics as [[wiki-links]]
+- Key concepts linked in the body
 
 Commands:
-/start - Show this help message
-/health - Check bot health and uptime
-/status - Show systemd service status
-/logs - Show recent log entries
+/start - Show this message
+/health - Bot health and uptime
+/status - systemd service status
+/logs - Recent log entries
 /restart - Restart the bot`;
 
 export async function handleStart(ctx: Context): Promise<void> {
