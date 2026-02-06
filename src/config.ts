@@ -53,6 +53,22 @@ export const config = parsed.data;
 export type Config = typeof config;
 
 /**
- * Derived path: Captures subdirectory within the Obsidian vault.
+ * Derived path: Categories subdirectory within the Obsidian vault.
  */
-export const CAPTURES_DIR = path.join(config.NOTES_DIR, 'Captures');
+export const CATEGORIES_DIR = path.join(config.NOTES_DIR, 'Categories');
+
+/**
+ * Load category names from the Categories/ directory.
+ * Returns an array of category names (filenames without .md extension).
+ */
+export function loadCategories(): string[] {
+  if (!fs.existsSync(CATEGORIES_DIR) || !fs.statSync(CATEGORIES_DIR).isDirectory()) {
+    console.error(`Categories directory not found: ${CATEGORIES_DIR}`);
+    process.exit(1);
+  }
+
+  const files = fs.readdirSync(CATEGORIES_DIR);
+  return files
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => f.replace(/\.md$/, ''));
+}

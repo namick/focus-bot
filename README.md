@@ -1,11 +1,12 @@
 # Focus Bot
 
-A Telegram bot that captures quick thoughts and saves them as markdown notes to an Obsidian vault. Messages are analyzed by Claude to generate a title and tags, then written as markdown files with YAML frontmatter.
+A Telegram bot that captures quick thoughts and saves them as markdown notes to an Obsidian vault. Messages are analyzed by Claude to generate a title, categories, topics, and inline `[[wiki-links]]`, then written as markdown files with YAML frontmatter. Organization inspired by [Steph Ango's vault](https://stephango.com/vault).
 
 ## Features
 
 - Capture messages via Telegram and save to Obsidian
-- AI-generated titles and tags using Claude
+- AI-generated titles, categories, topics, and inline `[[wiki-links]]`
+- Categories constrained to hub notes in your vault's `Categories/` directory
 - User whitelist for access control
 - Automatic restart on failure (systemd)
 
@@ -39,7 +40,7 @@ Create a `.env` file with the following variables:
 |----------|----------|-------------|
 | `TELEGRAM_BOT_TOKEN` | Yes | Bot token from @BotFather |
 | `ALLOWED_USER_IDS` | Yes | Comma-separated Telegram user IDs |
-| `NOTES_DIR` | Yes | Absolute path to your Obsidian vault |
+| `NOTES_DIR` | Yes | Absolute path to your Obsidian vault root (must contain `Categories/`) |
 | `ANTHROPIC_API_KEY` | No | API key (uses subscription if not set) |
 
 To find your Telegram user ID, message [@userinfobot](https://t.me/userinfobot).
@@ -141,20 +142,21 @@ EnvironmentFile=/path/to/focus-bot/.env         # Adjust .env path
 
 ## Note Format
 
-Captured notes are saved to `NOTES_DIR/Captures/` as markdown with YAML frontmatter. The filename is the AI-generated title (e.g., `Coffee Machine Algorithm.md`).
+Captured notes are saved to `NOTES_DIR/` as markdown with YAML frontmatter. The filename is the AI-generated title (e.g., `Consciousness Sharing to Prove Qualia.md`).
 
 ```markdown
 ---
-created: 2026-02-04T14:34
-tags:
-  - tag-one
-  - tag-two
-  - tag-three
+captured: 2026-02-04T14:34
 source: telegram
 status: inbox
+categories:
+  - "[[Captures]]"
+  - "[[Ideas]]"
+topics:
+  - "[[Consciousness]]"
+  - "[[Philosophy]]"
 ---
-
-Original message content here.
+One way to prove or overcome the subjectiveness of [[consciousness]] or [[qualia]], would be to have some sort of consciousness sharing experience.
 ```
 
 ## License
