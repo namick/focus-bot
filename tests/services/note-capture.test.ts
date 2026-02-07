@@ -41,8 +41,7 @@ function mockFetch(pageMeta: { title?: string; description?: string; siteName?: 
 
 const defaultMetadata = {
   title: 'Test Note Title',
-  categories: ['Captures', 'Ideas'],
-  topics: ['Testing', 'Software'],
+  tags: ['ideas'],
   body: 'This is a [[test]] note about [[software testing]].',
 };
 
@@ -72,18 +71,16 @@ describe('captureNote', () => {
     expect(content).toContain('---');
     expect(content).toContain('source: telegram');
     expect(content).toContain('status: inbox');
-    expect(content).toContain('"[[Captures]]"');
-    expect(content).toContain('"[[Ideas]]"');
-    expect(content).toContain('"[[Testing]]"');
-    expect(content).toContain('"[[Software]]"');
+    expect(content).toContain('tags:');
+    expect(content).toContain('  - captures');
+    expect(content).toContain('  - ideas');
     expect(content).toContain('[[test]]');
   });
 
   test('routes URL messages to Bookmarks directory', async () => {
     setQueryResponse({
       title: 'Interesting Article',
-      categories: ['Captures', 'Clippings'],
-      topics: ['Web', 'Technology'],
+      tags: ['links', 'articles'],
       body: 'Check out https://example.com/article about [[technology]].',
     });
     mockFetch({ title: 'Example Article', description: 'A great article', siteName: 'Example' });
@@ -97,25 +94,23 @@ describe('captureNote', () => {
     expect(content).toContain('url: "https://example.com/article"');
   });
 
-  test('always includes [[Captures]] category', async () => {
+  test('always includes captures tag', async () => {
     setQueryResponse({
-      title: 'No Captures Category',
-      categories: ['Ideas'],
-      topics: ['Testing', 'Other'],
+      title: 'No Captures Tag',
+      tags: ['ideas'],
       body: 'Body text.',
     });
 
     await captureNote('Some thought');
 
     const [, content] = mocks.fs.writeFileSyncCalls[0];
-    expect(content).toContain('"[[Captures]]"');
+    expect(content).toContain('  - captures');
   });
 
   test('generates safe filename from title', async () => {
     setQueryResponse({
       title: 'A Title With Spaces',
-      categories: ['Captures'],
-      topics: ['One', 'Two'],
+      tags: ['ideas'],
       body: 'Body.',
     });
 

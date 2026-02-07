@@ -7,8 +7,7 @@ const originalFetch = globalThis.fetch;
 
 const defaultMetadata = {
   title: 'Test Note',
-  categories: ['Captures'],
-  topics: ['Testing', 'Default'],
+  tags: ['ideas'],
   body: 'Test body.',
 };
 
@@ -38,6 +37,7 @@ function createMockContext(text?: string) {
     chat: text !== undefined ? { id: 12345 } : undefined,
     api: {
       sendChatAction: mock(() => Promise.resolve(true)),
+      setMessageReaction: mock(() => Promise.resolve(true)),
     },
     react: mock(() => Promise.resolve()),
     reply: mock(() => Promise.resolve()),

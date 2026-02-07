@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Focus Bot is a Telegram bot that captures quick thoughts and saves them as markdown notes to an Obsidian vault. Messages sent to the bot are analyzed by Claude to generate a title, categories, topics, and inline wiki-links, then written as markdown files with YAML frontmatter to the vault root. Organization follows Steph Ango's vault patterns: categories as wiki-links to hub notes, topics for subject matter, and `[[wiki-links]]` in note body.
+Focus Bot is a Telegram bot that captures quick thoughts and saves them as markdown notes to an Obsidian vault. Messages sent to the bot are analyzed by Claude to generate a title, tags, and inline wiki-links, then written as markdown files with YAML frontmatter to the vault root. Tags describe the **type** of capture (always plural: `captures`, `quotes`, `ideas`, `articles`), while `[[wiki-links]]` in the note body handle subject matter connections.
 
 ## Commands
 
@@ -34,20 +34,20 @@ Telegram → Grammy Bot → Auth Middleware → Message Handler → Note Capture
 2. Auth middleware checks user ID against `ALLOWED_USER_IDS` whitelist
 3. Message handler extracts text and calls `captureNote()` (fast path)
 4. Note capture service:
-   - **Metadata extraction**: Claude haiku analyzes message, returns JSON `{title, categories, topics, body}`
-   - Categories are constrained to files in `NOTES_DIR/Categories/` (loaded at startup)
+   - **Metadata extraction**: Claude haiku analyzes message, returns JSON `{title, tags, body}`
+   - Tags are type-based (what kind of capture), not topical. `captures` tag is code-enforced.
    - Body includes inline `[[wiki-links]]` for key concepts
    - **File writing**: Direct `fs.writeFileSync` to `NOTES_DIR` (text notes) or `Bookmarks/` (URL notes)
 5. Handler replies to user with 👍 reaction
 6. Handler fires `processNote()` as fire-and-forget (async enrichment for URLs)
 
 ### Key Files
-- `src/index.ts` - Entry point, bot startup, categories loading, graceful shutdown
-- `src/config.ts` - Zod-validated environment configuration + `CATEGORIES_DIR` + `BOOKMARKS_DIR` + `loadCategories()`
+- `src/index.ts` - Entry point, bot startup, graceful shutdown
+- `src/config.ts` - Zod-validated environment configuration + `BOOKMARKS_DIR`
 - `src/bot/bot.ts` - Grammy bot initialization, middleware/handler registration
 - `src/bot/middleware/auth.ts` - User whitelist enforcement
 - `src/bot/handlers/message.ts` - Routes text messages to note capture, fires async enrichment
-- `src/services/note-capture.ts` - Core logic: metadata extraction + direct file writing
+- `src/services/note-capture.ts` - Core logic: metadata extraction (title, tags, body) + direct file writing
 - `src/services/note-enrichment.ts` - Async URL enrichment: AI summaries, Telegraph publishing, frontmatter updates
 - `src/utils/telegraph.ts` - Telegraph (telegra.ph) client: account management, content conversion, page creation
 
@@ -56,8 +56,8 @@ Telegram → Grammy Bot → Auth Middleware → Message Handler → Note Capture
 The bot uses `query()` from `@anthropic-ai/claude-agent-sdk` for a single call:
 
 **Metadata extraction** (`haiku` model, 1 turn):
-- Prompt includes the category list from `Categories/` directory
-- Asks for JSON with title, categories, topics, and wiki-linked body
+- Asks for JSON with title, tags (type-based, plural), and wiki-linked body
+- `captures` tag is code-enforced (always prepended, not in AI response)
 - Response parsed with regex to extract JSON, validated with Zod
 - No tools allowed (pure text response)
 
@@ -89,11 +89,10 @@ Required environment variables (validated at startup):
 
 - **`TELEGRAM_BOT_TOKEN`** — Bot token from @BotFather
 - **`ALLOWED_USER_IDS`** — Comma-separated Telegram user IDs
-- **`NOTES_DIR`** — Absolute path to Obsidian vault root (must contain a `Categories/` subdirectory)
+- **`NOTES_DIR`** — Absolute path to Obsidian vault root
 - **`ANTHROPIC_API_KEY`** — Optional (defaults to subscription model)
 
 Derived values:
-- **`CATEGORIES_DIR`** — `NOTES_DIR/Categories/` (must exist, read at startup)
 - **`BOOKMARKS_DIR`** — `NOTES_DIR/Bookmarks/` (auto-created at startup)
 
 ## Note Format
@@ -105,12 +104,9 @@ The filename IS the title (Obsidian convention). No `title` property in frontmat
 captured: 2026-02-04T14:34
 source: telegram
 status: inbox
-categories:
-  - "[[Captures]]"
-  - "[[Ideas]]"
-topics:
-  - "[[Consciousness]]"
-  - "[[Philosophy]]"
+tags:
+  - captures
+  - ideas
 ---
 One way to prove or overcome the subjectiveness of [[consciousness]] or [[qualia]], would be to have some sort of consciousness sharing experience.
 ```
@@ -119,8 +115,7 @@ One way to prove or overcome the subjectiveness of [[consciousness]] or [[qualia
 - **captured**: Local datetime in `YYYY-MM-DDTHH:mm` format (Obsidian-compatible)
 - **source**: Always `telegram` (enables Dataview filtering)
 - **status**: Always `inbox` (for processing workflow)
-- **categories**: Wiki-links to hub notes in `Categories/` directory. `[[Captures]]` always included.
-- **topics**: Wiki-links for subject matter (freeform, AI-generated)
+- **tags**: Plain strings describing the type of capture (always plural). `captures` is code-enforced. Examples: `captures`, `quotes`, `ideas`, `articles`, `links`, `books`.
 - **Body**: Original message with inline `[[wiki-links]]` for key concepts
 - **telegraph**: Telegraph URL for readable summary (added async by enrichment, URL notes only)
 - **Location**: `NOTES_DIR` root (text notes) or `NOTES_DIR/Bookmarks/` (URL notes)
