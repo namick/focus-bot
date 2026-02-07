@@ -5,13 +5,13 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Message -> Note. No friction, no decisions. Just send a thought and it's captured with intelligent metadata.
-**Current focus:** Milestone 1 complete. Phase 4 (URL/Bookmark Capture) delivered.
+**Current focus:** Tags refactor complete. Categories+topics replaced with type-based tags.
 
 ## Current Position
 
-Phase: 4 of 4 complete (Milestone 1 + Phase 4)
+Phase: 5 of 5 complete (Tags Refactor)
 Status: All planned features delivered
-Last activity: 2026-02-06 - Telegraph publishing + Bookmarks directory
+Last activity: 2026-02-07 - Tags refactor (replaced categories+topics with type-based tags)
 
 Progress: [██████████] 100%
 
@@ -22,13 +22,13 @@ Progress: [██████████] 100%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [Phase 5]: Replaced categories+topics with type-based tags (plain strings, always plural)
+- [Phase 5]: `captures` tag code-enforced (always prepended, not in AI response)
+- [Phase 5]: Removed Categories/ directory dependency (loadCategories, CATEGORIES_DIR)
+- [Phase 5]: Tags describe type of capture (quotes, ideas, articles), not topic
+- [Phase 5]: Wiki-links in body unchanged — handle subject matter connections
 - [Phase 4]: URL notes route to NOTES_DIR/Bookmarks/ (text notes stay in vault root)
 - [Phase 4]: Telegraph (telegra.ph) publishes readable summaries of URL content
-- [Phase 4]: Telegraph account auto-created and persisted in .telegraph-account.json
-- [Phase 4]: Telegraph link sent as reply to user's original message
-- [Phase 4]: Telegraph URL stored in note frontmatter (`telegraph:` field)
-- [Phase 4]: YouTube transcripts fetched via yt-dlp, summarized via Claude haiku
-- [Phase 4]: Generic URLs: article text fetched, summarized via Claude haiku
 - [Phase 4]: Enrichment failures logged but never surface to user
 
 ### Pending Todos
@@ -42,8 +42,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06
-Stopped at: Phase 4 complete, ready for public release
+Last session: 2026-02-07
+Stopped at: Phase 5 (Tags Refactor) complete
 Resume file: .planning/WHATSNEXT.md
 
 ## What's Been Delivered
@@ -83,6 +83,13 @@ Resume file: .planning/WHATSNEXT.md
 - Telegraph link sent as reply to user
 - URL notes route to Bookmarks/ directory
 - Reaction feedback: 👍 on capture, 💯 on enrichment complete
+
+### Phase 5: Tags Refactor (Complete - 2026-02-07)
+- Replaced categories+topics with type-based tags (plain strings, always plural)
+- Removed Categories/ directory dependency (CATEGORIES_DIR, loadCategories)
+- `captures` tag code-enforced (always prepended)
+- Updated Claude prompt for tag philosophy (type-based, not topical)
+- Updated all test files, documentation, and planning docs
 
 ### Research
 - 2026-02-05: Second brain methodologies, feature prioritization, competitive landscape

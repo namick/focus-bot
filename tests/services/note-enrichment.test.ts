@@ -9,10 +9,9 @@ const NOTE_CONTENT = `---
 captured: 2026-02-04T14:34
 source: telegram
 status: inbox
-categories:
-  - "[[Captures]]"
-topics:
-  - "[[Testing]]"
+tags:
+  - captures
+  - links
 ---
 Check out https://example.com for details.
 `;
@@ -109,7 +108,7 @@ describe('processNote', () => {
     expect(telegraphWrite[1]).toContain('telegraph: "https://telegra.ph/test-page"');
   });
 
-  test('sends Telegram notification when tg context provided', async () => {
+  test('sends Telegraph link and 💯 reaction when tg context provided', async () => {
     const mockSendMessage = mock(() => Promise.resolve({}));
     const mockSetReaction = mock(() => Promise.resolve(true));
 
@@ -121,10 +120,22 @@ describe('processNote', () => {
 
     await processNote('/tmp/test-vault/note.md', ['https://example.com/article'], tg);
 
-    expect(mockSendMessage).toHaveBeenCalledWith(12345, 'https://telegra.ph/test-page', {
-      reply_parameters: { message_id: 67890 },
-    });
-    expect(mockSetReaction).toHaveBeenCalled();
+    expect(mockSendMessage).toHaveBeenCalledWith(12345, 'https://telegra.ph/test-page');
+    expect(mockSetReaction).toHaveBeenCalledWith(12345, 67890, [{ type: 'emoji', emoji: '💯' }]);
+  });
+
+  test('sends 💯 reaction even with no URLs', async () => {
+    const mockSetReaction = mock(() => Promise.resolve(true));
+
+    const tg = {
+      chatId: 12345,
+      messageId: 67890,
+      api: { setMessageReaction: mockSetReaction } as any,
+    };
+
+    await processNote('/tmp/test-vault/note.md', [], tg);
+
+    expect(mockSetReaction).toHaveBeenCalledWith(12345, 67890, [{ type: 'emoji', emoji: '💯' }]);
   });
 
   test('handles enrichment failures gracefully', async () => {

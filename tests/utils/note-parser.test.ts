@@ -5,11 +5,9 @@ const SAMPLE_NOTE = `---
 captured: 2026-02-04T14:34
 source: telegram
 status: inbox
-categories:
-  - "[[Captures]]"
-  - "[[Ideas]]"
-topics:
-  - "[[Consciousness]]"
+tags:
+  - captures
+  - ideas
 ---
 This is the body of the note.
 `;
@@ -19,7 +17,7 @@ describe('parseNote', () => {
     const result = parseNote(SAMPLE_NOTE);
     expect(result.frontmatter).toContain('captured: 2026-02-04T14:34');
     expect(result.frontmatter).toContain('source: telegram');
-    expect(result.frontmatter).toContain('[[Captures]]');
+    expect(result.frontmatter).toContain('- captures');
     expect(result.body).toBe('This is the body of the note.\n');
   });
 

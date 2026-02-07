@@ -24,7 +24,17 @@ const CLAUDE_CODE_PATH =
  * For other URLs: fetches page metadata and appends link preview.
  */
 export async function processNote(filePath: string, urls: string[], tg?: EnrichmentContext): Promise<void> {
-  if (urls.length === 0) return;
+  if (urls.length === 0) {
+    // No URLs to enrich, but still signal completion
+    if (tg) {
+      try {
+        await tg.api.setMessageReaction(tg.chatId, tg.messageId, [{ type: 'emoji', emoji: '💯' }]);
+      } catch (error) {
+        console.warn('[enrichment] Failed to set reaction:', error);
+      }
+    }
+    return;
+  }
 
   console.log(`[enrichment] Processing ${urls.length} URL(s) in ${filePath}`);
 
@@ -86,12 +96,10 @@ export async function processNote(filePath: string, urls: string[], tg?: Enrichm
     }
   }
 
-  // Reply to user with Telegraph link
+  // Send Telegraph link to user
   if (telegraphUrl && tg) {
     try {
-      await tg.api.sendMessage(tg.chatId, telegraphUrl, {
-        reply_parameters: { message_id: tg.messageId },
-      });
+      await tg.api.sendMessage(tg.chatId, telegraphUrl);
     } catch (error) {
       console.warn('[enrichment] Failed to send Telegraph URL:', error);
     }
