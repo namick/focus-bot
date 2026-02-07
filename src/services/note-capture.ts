@@ -4,11 +4,13 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 import sanitize from 'sanitize-filename';
 import { config, loadCategories } from '../config.js';
+import { fetchPageMetadata } from '../utils/html-metadata.js';
+import { extractUrls } from '../utils/url.js';
 
 // Path to Claude Code executable
 const CLAUDE_CODE_PATH =
   process.env.CLAUDE_CODE_PATH ||
-  '/home/n8bot/.vscode/extensions/anthropic.claude-code-2.1.31-linux-x64/resources/native-binary/claude';
+  '/home/n8bot/.local/bin/claude';
 
 /**
  * Schema for note metadata extracted by Claude.
@@ -25,20 +27,31 @@ type NoteMetadata = z.infer<typeof NoteMetadataSchema>;
 export interface CaptureResult {
   title: string;
   filePath: string;
+  urls: string[];
 }
 
 /**
  * Extract title, categories, topics, and wiki-linked body from a message using Claude.
  */
-async function extractMetadata(message: string): Promise<NoteMetadata> {
+async function extractMetadata(message: string, urls: string[], urlMeta?: { title: string | null; description: string | null; siteName: string | null }): Promise<NoteMetadata> {
   const categories = loadCategories();
   const categoryList = categories.join(', ');
+
+  let urlContext = '';
+  if (urls.length > 0) {
+    const metaLines: string[] = [`This message contains URL(s): ${urls.join(', ')}`];
+    if (urlMeta?.title) metaLines.push(`Page title: "${urlMeta.title}"`);
+    if (urlMeta?.description) metaLines.push(`Page description: "${urlMeta.description}"`);
+    if (urlMeta?.siteName) metaLines.push(`Site: ${urlMeta.siteName}`);
+    metaLines.push('The message is sharing a link/bookmark. Consider categories like "Clippings" or "References" if available. Use the page title/description to generate a descriptive note title.');
+    urlContext = '\n\n' + metaLines.join('\n');
+  }
 
   for await (const msg of query({
     prompt: `Analyze this message and generate metadata for an Obsidian note.
 
 Message:
-${message}
+${message}${urlContext}
 
 Respond with ONLY a JSON object (no markdown, no explanation) in this exact format:
 {"title": "A concise descriptive title", "categories": ["Category1", "Category2"], "topics": ["Topic One", "Topic Two", "Topic Three"], "body": "The message with [[wiki-links]] inserted around key concepts."}
@@ -47,9 +60,9 @@ Requirements:
 - title: 1-100 characters, concise and descriptive
 - categories: Pick 1-5 from ONLY this list: ${categoryList}
 - topics: 2-5 topic names as natural phrases (capitalized, e.g. "Machine Learning", "Philosophy")
-- body: Rewrite the original message inserting [[wiki-links]] around key concepts, important nouns, and proper names. Preserve the original meaning and wording exactly -- only add [[ and ]] around terms worth linking. Link both well-known concepts and ideas worth exploring further.`,
+- body: Rewrite the original message inserting [[wiki-links]] around key concepts, important nouns, and proper names. Preserve the original meaning and wording exactly -- only add [[ and ]] around terms worth linking. Link both well-known concepts and ideas worth exploring further. NEVER insert [[wiki-links]] inside URLs -- keep all URLs exactly as they appear in the original message.`,
     options: {
-      model: 'haiku',
+      model: config.CAPTURE_MODEL,
       maxTurns: 1,
       pathToClaudeCodeExecutable: CLAUDE_CODE_PATH,
     },
@@ -87,7 +100,7 @@ function formatLocalDatetime(date: Date): string {
  * Generate markdown content with YAML frontmatter.
  * Title is omitted — the filename IS the title in Obsidian.
  */
-function generateNoteContent(metadata: NoteMetadata): string {
+function generateNoteContent(metadata: NoteMetadata, url?: string): string {
   const captured = formatLocalDatetime(new Date());
 
   // Ensure [[Captures]] is always included
@@ -101,11 +114,12 @@ function generateNoteContent(metadata: NoteMetadata): string {
   const topicsYaml = metadata.topics
     .map((t) => `  - "[[${t}]]"`)
     .join('\n');
+  const urlLine = url ? `\nurl: "${url}"` : '';
 
   return `---
 captured: ${captured}
 source: telegram
-status: inbox
+status: inbox${urlLine}
 categories:
 ${categoriesYaml}
 topics:
@@ -133,11 +147,17 @@ function generateFilename(title: string): string {
 export async function captureNote(
   message: string
 ): Promise<CaptureResult> {
-  const metadata = await extractMetadata(message);
+  const urls = extractUrls(message);
+  const primaryUrl = urls.length > 0 ? urls[0] : undefined;
+
+  // Pre-fetch page metadata so Claude can generate a descriptive title for URL-only messages
+  const urlMeta = primaryUrl ? await fetchPageMetadata(primaryUrl) : undefined;
+
+  const metadata = await extractMetadata(message, urls, urlMeta);
   const filename = generateFilename(metadata.title);
-  const content = generateNoteContent(metadata);
+  const content = generateNoteContent(metadata, primaryUrl);
   const filePath = path.join(config.NOTES_DIR, filename);
   fs.writeFileSync(filePath, content, 'utf-8');
 
-  return { title: metadata.title, filePath };
+  return { title: metadata.title, filePath, urls };
 }

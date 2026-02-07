@@ -1,17 +1,238 @@
-/**
- * Async note enrichment service (stub).
- *
- * Called after the fast capture path completes.
- * Future enrichment tasks: type classification, link suggestions,
- * summary generation, related notes discovery.
- */
+import * as fs from 'node:fs';
+import { query } from '@anthropic-ai/claude-agent-sdk';
+import type { Api } from 'grammy';
+import { config } from '../config.js';
+import { fetchPageMetadata, PageMetadata } from '../utils/html-metadata.js';
+import { fetchArticleText } from '../utils/html-text.js';
+import { appendToNoteBody } from '../utils/note-parser.js';
+import { isYouTubeUrl, fetchTranscript } from '../utils/youtube.js';
+
+export interface EnrichmentContext {
+  chatId: number;
+  messageId: number;
+  api: Api;
+}
+
+const CLAUDE_CODE_PATH =
+  process.env.CLAUDE_CODE_PATH ||
+  '/home/n8bot/.local/bin/claude';
 
 /**
  * Process a captured note for enrichment.
- * Currently a no-op stub that logs the intent.
- *
- * @param filePath - Absolute path to the captured note file
+ * For YouTube URLs: fetches transcript, generates AI summary.
+ * For other URLs: fetches page metadata and appends link preview.
  */
-export async function processNote(filePath: string): Promise<void> {
-  console.log(`[enrichment] Queued for future processing: ${filePath}`);
+export async function processNote(filePath: string, urls: string[], tg?: EnrichmentContext): Promise<void> {
+  if (urls.length === 0) return;
+
+  console.log(`[enrichment] Processing ${urls.length} URL(s) in ${filePath}`);
+
+  const sections: string[] = [];
+
+  for (const url of urls) {
+    try {
+      if (isYouTubeUrl(url)) {
+        const section = await enrichYouTube(url);
+        if (section) sections.push(section);
+      } else {
+        const section = await enrichGenericUrl(url);
+        if (section) sections.push(section);
+      }
+    } catch (error) {
+      console.warn(`[enrichment] Failed to enrich ${url}:`, error);
+    }
+  }
+
+  if (sections.length === 0) {
+    console.log(`[enrichment] No enrichment content for ${filePath}`);
+    return;
+  }
+
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const updatedContent = appendToNoteBody(content, sections.join('\n\n'));
+    fs.writeFileSync(filePath, updatedContent, 'utf-8');
+    console.log(`[enrichment] Updated ${filePath}`);
+  } catch (error) {
+    console.error(`[enrichment] Failed to update ${filePath}:`, error);
+    return;
+  }
+
+  // Signal enrichment complete with 💯 (replaces the 👍 from capture)
+  if (tg) {
+    try {
+      await tg.api.setMessageReaction(tg.chatId, tg.messageId, [{ type: 'emoji', emoji: '💯' }]);
+    } catch (error) {
+      console.warn('[enrichment] Failed to set reaction:', error);
+    }
+  }
+}
+
+/**
+ * Enrich a YouTube URL: fetch metadata + transcript, generate AI summary.
+ */
+async function enrichYouTube(url: string): Promise<string | null> {
+  const [metadata, transcript] = await Promise.all([
+    fetchPageMetadata(url),
+    fetchTranscript(url),
+  ]);
+
+  const parts: string[] = [];
+
+  // Header with video info
+  if (metadata.title) {
+    const siteName = metadata.siteName || 'YouTube';
+    parts.push(`> **${metadata.title}**`);
+    if (metadata.description) parts.push(`> ${metadata.description}`);
+    parts.push(`> \u2014 ${siteName}`);
+  }
+
+  // AI summary from transcript (transcript is not saved — only used as input)
+  if (transcript) {
+    console.log(`[enrichment] Got transcript (${transcript.length} chars), generating summary...`);
+    const summary = await summarizeTranscript(transcript, metadata.title);
+    if (summary) {
+      parts.push('');
+      parts.push('> [!summary] Summary');
+      for (const line of summary.split('\n')) {
+        parts.push(`> ${line}`);
+      }
+    }
+  } else {
+    console.log(`[enrichment] No transcript available for ${url}`);
+  }
+
+  return parts.length > 0 ? parts.join('\n') : null;
+}
+
+/**
+ * Enrich a generic (non-YouTube) URL with page metadata and AI summary.
+ */
+async function enrichGenericUrl(url: string): Promise<string | null> {
+  const [metadata, articleText] = await Promise.all([
+    fetchPageMetadata(url),
+    fetchArticleText(url),
+  ]);
+
+  const parts: string[] = [];
+
+  // Header with page info
+  if (metadata.title) {
+    const siteName = metadata.siteName || extractDomain(url);
+    parts.push(`> **${metadata.title}**`);
+    if (metadata.description) parts.push(`> ${metadata.description}`);
+    parts.push(`> \u2014 ${siteName}`);
+  }
+
+  // AI summary from article text
+  if (articleText && articleText.length >= 200) {
+    console.log(`[enrichment] Got article text (${articleText.length} chars), generating summary...`);
+    const summary = await summarizeArticle(articleText, metadata.title);
+    if (summary) {
+      parts.push('');
+      parts.push('> [!summary] Summary');
+      for (const line of summary.split('\n')) {
+        parts.push(`> ${line}`);
+      }
+    }
+  }
+
+  return parts.length > 0 ? parts.join('\n') : null;
+}
+
+/**
+ * Use Claude to produce a detailed summary of a video transcript.
+ */
+async function summarizeTranscript(
+  transcript: string,
+  title: string | null
+): Promise<string | null> {
+  const maxChars = 50_000;
+  const truncated = transcript.length > maxChars
+    ? transcript.slice(0, maxChars) + '...'
+    : transcript;
+
+  const titleContext = title ? `Video title: "${title}"\n\n` : '';
+
+  return runSummary(
+    `${titleContext}Provide a detailed, in-depth summary of this video transcript. This summary is the primary representation of this video's content, so be thorough.
+
+Structure your response as:
+- A 2-3 sentence overview of the main topic and thesis
+- Key points, arguments, and ideas discussed (as bullet points — be comprehensive)
+- Notable quotes, statistics, or specific claims worth remembering
+- Conclusions or takeaways
+
+Write in plain text. Use bullet points (- ) for lists. Do not use markdown headers or bold.
+
+Transcript:
+${truncated}`,
+    'video summary'
+  );
+}
+
+/**
+ * Use Claude to summarize an article's text content.
+ */
+async function summarizeArticle(
+  text: string,
+  title: string | null
+): Promise<string | null> {
+  const maxChars = 50_000;
+  const truncated = text.length > maxChars
+    ? text.slice(0, maxChars) + '...'
+    : text;
+
+  const titleContext = title ? `Article title: "${title}"\n\n` : '';
+
+  return runSummary(
+    `${titleContext}Summarize this article in a clear, structured format.
+
+Structure your response as:
+- A 1-2 sentence overview of what the article is about
+- Key points and insights (as bullet points)
+- Notable data, quotes, or specific claims worth remembering
+
+Write in plain text. Use bullet points (- ) for lists. Do not use markdown headers or bold.
+
+Article text:
+${truncated}`,
+    'article summary'
+  );
+}
+
+/**
+ * Run a summarization prompt through Claude.
+ */
+async function runSummary(prompt: string, label: string): Promise<string | null> {
+  try {
+    for await (const msg of query({
+      prompt,
+      options: {
+        model: config.ENRICHMENT_MODEL,
+        maxTurns: 1,
+        pathToClaudeCodeExecutable: CLAUDE_CODE_PATH,
+      },
+    })) {
+      if (msg.type === 'result') {
+        if (msg.subtype === 'success' && msg.result) {
+          return msg.result.trim();
+        }
+        console.warn(`[enrichment] ${label} failed: ${msg.subtype}`);
+        return null;
+      }
+    }
+  } catch (error) {
+    console.warn(`[enrichment] Failed to generate ${label}:`, error);
+  }
+
+  return null;
+}
+
+function extractDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
 }
