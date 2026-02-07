@@ -37,6 +37,14 @@ const envSchema = z.object({
   ANTHROPIC_API_KEY: z
     .string()
     .optional(),
+
+  CAPTURE_MODEL: z
+    .string()
+    .default('haiku'),
+
+  ENRICHMENT_MODEL: z
+    .string()
+    .default('haiku'),
 });
 
 const parsed = envSchema.safeParse(process.env);
