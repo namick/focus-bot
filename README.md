@@ -1,5 +1,7 @@
 # Focus Bot
 
+![Focus Bot](public/focus-bot-hero.png)
+
 A Telegram bot that captures thoughts and bookmarks as Obsidian markdown notes. Send a message, get an AI-organized note with a title, categories, topics, and inline `[[wiki-links]]`. Share a link, get an AI summary published to [Telegraph](https://telegra.ph) for instant reading.
 
 Organization follows [Steph Ango's vault patterns](https://stephango.com/vault).
