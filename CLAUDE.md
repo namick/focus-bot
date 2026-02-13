@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Focus Bot is a Telegram bot that captures quick thoughts and saves them as markdown notes to an Obsidian vault. Messages sent to the bot are analyzed by Claude to generate a title, tags, and inline wiki-links, then written as markdown files with YAML frontmatter to the vault root. Voice messages are transcribed via Groq Whisper and processed through a multi-turn drafting flow before saving. Tags describe the **type** of capture (always plural: `captures`, `quotes`, `ideas`, `articles`), while `[[wiki-links]]` in the note body handle subject matter connections.
 
+## Development Workflow
+
+This repo follows TDD. All tests must pass before committing code. Run `bun test` and fix any failures before creating commits.
+
 ## Commands
 
 ```bash

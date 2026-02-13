@@ -48,6 +48,7 @@ const defaultMetadata = {
 describe('captureNote', () => {
   beforeEach(() => {
     mocks.fs.writeFileSyncCalls = [];
+    mocks.fs.existsSyncResult = false;
     setQueryResponse(defaultMetadata);
     mockFetch();
   });
