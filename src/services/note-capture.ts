@@ -2,9 +2,9 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
-import sanitize from 'sanitize-filename';
 import { config, BOOKMARKS_DIR } from '../config.js';
 import { fetchPageMetadata } from '../utils/html-metadata.js';
+import { resolveFilePath } from '../utils/filename.js';
 import { extractUrls } from '../utils/url.js';
 
 const CLAUDE_CODE_PATH =
@@ -118,18 +118,6 @@ ${metadata.body}
 }
 
 /**
- * Generate a safe filename from a title.
- * Preserves spaces for Obsidian compatibility.
- */
-function generateFilename(title: string): string {
-  const sanitized = sanitize(title, { replacement: '-' });
-  if (!sanitized) {
-    return `note-${Date.now()}.md`;
-  }
-  return `${sanitized}.md`;
-}
-
-/**
  * Capture a message as a note: extract metadata, generate content, write file.
  */
 export async function captureNote(
@@ -142,10 +130,9 @@ export async function captureNote(
   const urlMeta = primaryUrl ? await fetchPageMetadata(primaryUrl) : undefined;
 
   const metadata = await extractMetadata(message, urls, urlMeta);
-  const filename = generateFilename(metadata.title);
   const content = generateNoteContent(metadata, primaryUrl);
   const targetDir = urls.length > 0 ? BOOKMARKS_DIR : config.NOTES_DIR;
-  const filePath = path.join(targetDir, filename);
+  const filePath = resolveFilePath(metadata.title, targetDir);
   fs.writeFileSync(filePath, content, 'utf-8');
 
   return { title: metadata.title, filePath, urls };

@@ -1,8 +1,7 @@
 import * as fs from 'node:fs';
-import * as path from 'node:path';
 import type { Context } from 'grammy';
-import sanitize from 'sanitize-filename';
 import { config } from '../../config.js';
+import { resolveFilePath } from '../../utils/filename.js';
 import { downloadVoiceFile, transcribeVoice } from '../../services/voice-transcription.js';
 import { processVoiceInput, type VoiceAIResult } from '../../services/voice-ai.js';
 import {
@@ -32,17 +31,6 @@ function formatLocalDatetime(date: Date): string {
 }
 
 /**
- * Generate a safe filename from a title.
- */
-function generateFilename(title: string): string {
-  const sanitized = sanitize(title, { replacement: '-' });
-  if (!sanitized) {
-    return `note-${Date.now()}.md`;
-  }
-  return `${sanitized}.md`;
-}
-
-/**
  * Write the note to the vault.
  */
 function saveNoteToVault(title: string, tags: string[], body: string): string {
@@ -60,8 +48,7 @@ ${tagsYaml}
 ${body}
 `;
 
-  const filename = generateFilename(title);
-  const filePath = path.join(config.NOTES_DIR, filename);
+  const filePath = resolveFilePath(title, config.NOTES_DIR);
   fs.writeFileSync(filePath, content, 'utf-8');
   return filePath;
 }
