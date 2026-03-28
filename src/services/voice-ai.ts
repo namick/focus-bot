@@ -73,6 +73,7 @@ export async function processVoiceInput(
     options: {
       model: config.ENRICHMENT_MODEL,
       maxTurns: 3,
+      tools: [],
       pathToClaudeCodeExecutable: CLAUDE_CODE_PATH,
     },
   })) {

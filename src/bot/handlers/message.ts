@@ -1,7 +1,7 @@
 import { Context } from 'grammy';
 import { captureNote } from '../../services/note-capture.js';
 import { processNote } from '../../services/note-enrichment.js';
-import { hasSession } from '../../services/voice-session.js';
+import { hasSession, deleteSession } from '../../services/voice-session.js';
 import { processVoiceSessionInput } from './voice.js';
 
 export async function handleTextMessage(ctx: Context): Promise<void> {
@@ -16,7 +16,8 @@ export async function handleTextMessage(ctx: Context): Promise<void> {
       await processVoiceSessionInput(ctx, userId, ctx.chat.id, text);
     } catch (error) {
       console.error('[voice] Text input to session failed:', error);
-      await ctx.reply('Failed to process edit. Please try again.');
+      deleteSession(userId);
+      await ctx.reply('Voice session ended due to an error. Please start over.');
     }
     return;
   }
